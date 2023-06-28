@@ -1737,7 +1737,11 @@ public class NetconfSession {
             return;
         }
         final String returnedId = t.getAttrValue("message-id");
-        if (returnedId == null || !returnedId.equals(mid)) {
+        if (returnedId == null) {
+            // no message-id returned
+        }
+
+        if (!returnedId.equals(mid)) {
             throw new JNCException(JNCException.MESSAGE_ID_MISMATCH,
                     "After sending rpc with message-id=" + mid
                             + ", received rpc-reply with message-id="

@@ -696,7 +696,13 @@ public class Element implements Cloneable, Serializable {
      * @return String value of the attribute.
      */
     public String getAttrValue(String name) {
-        return getAttr(name).getValue();
+        Attribute attribute = getAttr(name);
+    
+        if (attribute != null) {
+            return attribute.getValue();
+        } else {
+            return null;
+        }
     }
 
     /**
