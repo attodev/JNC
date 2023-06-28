@@ -1738,7 +1738,7 @@ public class NetconfSession {
         }
         final String returnedId = t.getAttrValue("message-id");
         if (returnedId == null) {
-            // no message-id returned
+            return;
         }
 
         if (!returnedId.equals(mid)) {
