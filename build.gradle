@@ -26,6 +26,15 @@ plugins {
 //     ]
 // }
 
+subprojects {
+    tasks.withType(javadoc).all { enabled = false }
+}
+
+javadoc {
+    // without the -quiet option, the build fails
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 repositories {
     mavenCentral()
 }
@@ -84,3 +93,4 @@ publishing { // use 'gradle --info -PJNC_GITLAB_TOKEN=<token> publish'
 
     }
 }
+
