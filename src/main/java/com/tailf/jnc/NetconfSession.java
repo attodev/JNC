@@ -1,7 +1,11 @@
 package com.tailf.jnc;
 
 import com.tailf.jnc.framing.Framing;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
+import javax.print.Doc;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.List;
 
@@ -401,6 +405,24 @@ public class NetconfSession {
         out.print(request);
         out.flush();
         return message_id - 1; // FIXME
+    }
+
+    public Document sendXmlRequest(Document request)
+            throws ParserConfigurationException, IOException, SAXException, JNCException {
+        // no newline before flush
+        out.print(request.toString());
+        out.flush();
+        return recvXmlReply();
+    }
+
+    public String sendXmlRequest(String request)
+            throws IOException, JNCException {
+        // no newline before flush
+        out.print(request);
+        out.flush();
+        final String reply = in.readOne();
+        trace("reply= {}", reply);
+        return reply;
     }
 
     /**
@@ -1567,6 +1589,13 @@ public class NetconfSession {
         }
         /* rpc-error */
         throw new JNCException(JNCException.RPC_REPLY_ERROR, t);
+    }
+
+    Document recvXmlReply() throws ParserConfigurationException, IOException, SAXException, JNCException {
+        final String reply = in.readOne();
+        trace("reply= {}", reply);
+
+        return parser.parse2Doc(reply);
     }
 
     /* Extending the session with new capabilities. */

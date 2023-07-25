@@ -1,14 +1,20 @@
 package com.tailf.jnc;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * A simple SAX parser, for parsing NETCONF messages, into a simple
@@ -153,6 +159,16 @@ public class XMLParser {
                 str.getBytes(StandardCharsets.UTF_8));
         final InputSource is = new InputSource(istream);
         return parse(is);
+    }
+
+    public Document parse2Doc(String str) throws ParserConfigurationException, IOException, SAXException {
+        final ByteArrayInputStream istream = new ByteArrayInputStream(
+                str.getBytes(StandardCharsets.UTF_8));
+        final InputSource is = new InputSource(istream);
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+        return dBuilder.parse(is);
     }
 
     /**
