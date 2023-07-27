@@ -407,16 +407,24 @@ public class NetconfSession {
         return message_id - 1; // FIXME
     }
 
-    public Document sendXmlRequest(Document request)
-            throws ParserConfigurationException, IOException, SAXException, JNCException {
+    public Document sendXmlRequest(Document request) throws IOException, JNCException {
         // no newline before flush
-        out.print(request.toString());
-        out.flush();
-        return recvXmlReply();
+        return sendXmlRequest(request.toString());
     }
 
-    public String sendXmlRequest(String request)
-            throws IOException, JNCException {
+    public Document sendXmlRequest(String request) throws IOException, JNCException {
+        // no newline before flush
+        Document ret;
+        try {
+            final String reply = sendXmlRequestString(request);
+            ret = parser.parse2Doc(reply);
+        } catch (ParserConfigurationException | SAXException e) {
+            throw new JNCException(JNCException.PARSER_ERROR, e);
+        }
+        return ret;
+    }
+
+    public String sendXmlRequestString(String request) throws IOException, JNCException {
         // no newline before flush
         out.print(request);
         out.flush();
@@ -552,6 +560,27 @@ public class NetconfSession {
         out.flush();
         return recvRpcReplyData(rpcRequest.getMsgId());
     }
+
+    public String getConfigXmlString(int datastore) throws JNCException, IOException {
+        trace("getConfig: {}", datastoreToString(datastore));
+        RPCRequest rpcRequest = prepareGetConfigMessage(encodeDatastore(datastore));
+        return sendXmlRequestString(rpcRequest.getMessage().toString());
+    }
+
+    public String getConfigXmlString() throws JNCException, IOException {
+        return getConfigXmlString(RUNNING);
+    }
+
+    public Document getConfigXml(int datastore) throws IOException, JNCException {
+        trace("getConfig: {}", datastoreToString(datastore));
+        RPCRequest rpcRequest = prepareGetConfigMessage(encodeDatastore(datastore));
+        return sendXmlRequest(rpcRequest.getMessage().toString());
+    }
+
+    public Document getConfigXml() throws IOException, JNCException {
+        return getConfigXml(RUNNING);
+    }
+
 
     /**
      * Retrieves running configuration and device state information.
@@ -1589,13 +1618,6 @@ public class NetconfSession {
         }
         /* rpc-error */
         throw new JNCException(JNCException.RPC_REPLY_ERROR, t);
-    }
-
-    Document recvXmlReply() throws ParserConfigurationException, IOException, SAXException, JNCException {
-        final String reply = in.readOne();
-        trace("reply= {}", reply);
-
-        return parser.parse2Doc(reply);
     }
 
     /* Extending the session with new capabilities. */
