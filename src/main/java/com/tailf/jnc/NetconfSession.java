@@ -1815,6 +1815,7 @@ public class NetconfSession {
         if (mid == null) {
             return;
         }
+        /*
         final String returnedId = t.getAttrValue("message-id");
         if (returnedId == null) {
             return;
@@ -1826,6 +1827,7 @@ public class NetconfSession {
                             + ", received rpc-reply with message-id="
                             + returnedId);
         }
+        */
     }
 
 

@@ -1,16 +1,11 @@
 package com.tailf.jnc;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Serializable;
+import org.xml.sax.InputSource;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A configuration element sub-tree. Makes it possible to create and/or
@@ -50,6 +45,7 @@ public class Element implements Cloneable, Serializable {
 
     public static final String CREATE = "create";
     public static final String DELETE = "delete";
+    public static final String REMOVE = "remove";
     public static final String REPLACE = "replace";
     public static final String MERGE = "merge";
 
@@ -110,6 +106,9 @@ public class Element implements Cloneable, Serializable {
     public Element(String ns, String name) {
         namespace = ns;
         this.name = name;
+        final PrefixMap prefixMap = new PrefixMap();
+        prefixMap.add(new Prefix("", namespace));
+        setPrefix(prefixMap);
     }
 
     public Element getRootElement() {
@@ -1310,6 +1309,11 @@ public class Element implements Cloneable, Serializable {
      * <code>setAttr(Element.NETCONF_NAMESPACE,"operation",operation);</code> see @setAttr
      */
     public void setMark(String operation) {
+        Element that = this;
+        while (that!=null&&that.prefixes==null){
+            that = that.getParent();
+        }
+        that.prefixes.merge(defaultPrefixes);
         setAttr(NETCONF_NAMESPACE, OPERATION, operation);
     }
 
@@ -1325,7 +1329,29 @@ public class Element implements Cloneable, Serializable {
             }
         }
     }
+    /**
+     * Marks a node with operation delete.
+     */
+    public void markRemove() {
+        setMark(REMOVE);
+    }
 
+    /**
+     * Marks node(s) with operation delete.
+     * <p>
+     * See {@link Path} for more information about path expressions.
+     *
+     * @param pathStr Path string to find nodes
+     */
+    public void markRemove(String pathStr) throws JNCException {
+        final Path path = new Path(pathStr);
+        final NodeSet nodeSet = path.eval(this);
+        if (nodeSet != null) {
+            for (int i = 0; i < nodeSet.size(); i++) {
+                nodeSet.getElement(i).markRemove();
+            }
+        }
+    }
     /**
      * Marks a node with operation delete.
      */
@@ -1684,40 +1710,177 @@ public class Element implements Cloneable, Serializable {
         return s.toString();
     }
 
+    public String toCLIString() {
+        final StringBuffer s = new StringBuffer();
+        toCLIString(0, s);
+        return s.toString();
+    }
+
+    protected void toCLIString(int indent, StringBuffer s) {
+        final boolean flag = hasChildren();
+        final String qName = qualifiedName();
+
+        s.append(new String(new char[indent * 2]).replace("\0", " "));
+        s.append("").append(qName);
+        // add xmlns attributes (prefixes)
+//        if (prefixes != null) {
+//            for (final Prefix p : prefixes) {
+//                s.append(" ").append(p.toXMLString());
+//            }
+//        }
+        // add attributes
+//        if (attrs != null) {
+//            for (final Attribute attr : attrs) {
+//                s.append(" ").append(attr.toXMLString(this));
+//            }
+//        }
+        indent++;
+        // add children elements if any
+        if (flag) {
+            s.append("").append(("\n"));
+            for (final Element child : children) {
+                child.toCLIString(indent, s);
+            }
+
+        } else { // add value if any
+            if (value != null) {
+                s.append(" ").append((""));
+                final String stringValue = value.toString().replaceAll("&",
+                        "&amp;");
+                s.append(getIndentationSpacing(false, indent));
+                s.append(stringValue).append((""));
+            } else {
+                // self-closing tag
+                s.append("").append((""));
+                return;
+            }
+        }
+        indent--;
+
+        s.append(getIndentationSpacing(flag, indent)).append("").append("");
+//        if(this instanceof  Leaf){
+//
+//        }else{
+//            s.append(getIndentationSpacing(flag, indent)).append("exit").append("\n");
+//        }
+
+    }
+
+    public String toJSONString(){
+        final StringBuffer s = new StringBuffer();
+        toJSONString(true,false,false,0, s);
+        s.append("\n}");
+        return s.toString();
+    }
+
+    private void toJSONString(boolean first,boolean isEnd,boolean isArray,int indent, StringBuffer s){
+        final boolean flag = hasChildren();
+        boolean isArrayChild=false;
+        if(flag){
+            String  name =null;
+            for (final Element child : children) {
+                if(name!=null&&name.equals(child.qualifiedName())){
+                    isArrayChild =true;
+                    break;
+                }
+                name =child.qualifiedName();
+            }
+        }
+        final String qName = qualifiedName();
+        s.append(getIndentationSpacing(true, indent));
+        if(first){
+            if(isArray){
+                s.append("[");
+            }else{
+            s.append("{");}
+        }
+        if(!isArray)
+        {
+            s.append("\n").append(getIndentationSpacing(true, indent)).append("\"").append(qName).append("\":");
+        }
+        // add xmlns attributes (prefixes)
+//        if (prefixes != null) {
+//            for (final Prefix p : prefixes) {
+//                s.append(" ").append(p.toXMLString());
+//            }
+//        }
+//        // add attributes
+//        if (attrs != null) {
+//            for (final Attribute attr : attrs) {
+//                s.append(" ").append(attr.toXMLString(this));
+//            }
+//        }
+        indent++;
+        // add children elements if any
+        if (flag) {
+//            s.append("").append(("\n"));
+            int index=0;
+            int endIndex =children.size()-1;
+            for (final Element child : children) {
+                child.toJSONString(index==0,index==endIndex,isArrayChild,indent, s);
+                if(index!=endIndex)
+                    s.append(",");
+                s.append("\n");//.append(getIndentationSpacing(true, indent));
+                index++;
+            }
+        } else { // add value if any
+            if (value != null) {
+                s.append(("\""));
+                final String stringValue = value.toString().replaceAll("&",
+                        "&amp;");
+                s.append(getIndentationSpacing(false, indent));
+                s.append(stringValue).append(("\""));
+            } else {
+                // self-closing tag
+                s.append("null").append(("}"));
+                return;
+            }
+        }
+        if(flag){
+            if(isArrayChild ){
+                s.append(getIndentationSpacing(flag, indent)).append("]");
+            }else{
+                s.append(getIndentationSpacing(flag, indent)).append("}");
+            }
+        }
+
+        indent--;
+    }
+
     private void toXMLString(int indent, StringBuffer s) {
         final boolean flag = hasChildren();
         final String qName = qualifiedName();
-        String whitespacePrefix = new String(new char[indent * 2]).replace('\0', ' ');
-        s.append(whitespacePrefix).append('<').append(qName);
+        s.append(new String(new char[indent * 2]).replace("\0", " "));
+        s.append("<").append(qName);
         // add xmlns attributes (prefixes)
         if (prefixes != null) {
             for (final Prefix p : prefixes) {
-                s.append(' ').append(p.toXMLString());
+                s.append(" ").append(p.toXMLString());
             }
         }
         // add attributes
         if (attrs != null) {
             for (final Attribute attr : attrs) {
-                s.append(' ').append(attr.toXMLString(this));
+                s.append(" ").append(attr.toXMLString(this));
             }
         }
         indent++;
         // add children elements if any
         if (flag) {
-            s.append(">\n");
+            s.append(">").append(("\n"));
             for (final Element child : children) {
                 child.toXMLString(indent, s);
             }
         } else { // add value if any
             if (value != null) {
-                s.append('>');
+                s.append(">").append((""));
                 final String stringValue = value.toString().replaceAll("&",
                         "&amp;");
                 s.append(getIndentationSpacing(false, indent));
-                s.append(stringValue);
+                s.append(stringValue).append((""));
             } else {
              // self-closing tag
-             s.append("/>");
+             s.append("/>").append((""));
              return;
             }
         }
@@ -1762,7 +1925,6 @@ public class Element implements Cloneable, Serializable {
         }
         s.append("</" + qName + ">" + (newlineAtEnd ? "\n" : ""));
     }
-
     /**
      * Gets indentation spacing for any given indent level.
      *
@@ -1771,7 +1933,7 @@ public class Element implements Cloneable, Serializable {
      * @return A string with indent * 2 number of spaces if shouldIndent is
      *         <code>true</code>; otherwise an empty string.
      */
-    private String getIndentationSpacing(boolean shouldIndent, int indent) {
+    protected String getIndentationSpacing(boolean shouldIndent, int indent) {
         if (shouldIndent) {
             return new String(new char[indent * 2]).replace("\0", " ");
         }
@@ -1950,6 +2112,17 @@ public class Element implements Cloneable, Serializable {
     public static Element readFile(String filename) throws JNCException {
         final XMLParser p = new XMLParser();
         return p.readFile(filename);
+    }
+
+    /**
+     *
+     * @param xmlContent
+     * @return
+     * @throws JNCException
+     */
+    public static Element readXml(String xmlContent) throws JNCException {
+        final XMLParser p = new XMLParser();
+        return p.parse(new InputSource(new ByteArrayInputStream(xmlContent.getBytes())));
     }
 
     /* help functions */
