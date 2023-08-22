@@ -29,10 +29,12 @@ class ElementHandler extends DefaultHandler {
     private String leafNs;
     private String leafName;
     private String leafValue;
+    protected Capabilities capabilities;
+    protected YangNsPackage[] yangNsPackages;
 
     @Override
     public void startElement(String uri, String localName, String qName,
-            Attributes attributes) throws SAXException {
+                             Attributes attributes) throws SAXException {
 
         if (unknownLevel > 0) {
             unkownStartElement(uri, localName, attributes);
@@ -43,7 +45,8 @@ class ElementHandler extends DefaultHandler {
         Element child;
 
         try {
-            child = YangElement.createInstance(this, parent, uri, localName);
+            Capabilities.Capa capa = capabilities != null ? capabilities.getCapa(uri) : null;
+            child = YangElement.createInstance(this, parent, yangNsPackages, localName, new YangNsPackage(uri, capa == null ? null : capa.module, capa == null ? null : capa.revision));
         } catch (final JNCException e) {
             e.printStackTrace();
             throw (SAXException) new SAXException().initCause(e);
@@ -121,7 +124,7 @@ class ElementHandler extends DefaultHandler {
             // If it's a Leaf - we need to set value properly using
             // the setLeafValue method which will check restrictions
             try {
-            ((YangElement) current).setLeafValue(leafNs, leafName, leafValue);
+                ((YangElement) current).setLeafValue(leafNs, leafName, leafValue);
             } catch (final JNCException e) {
                 e.printStackTrace();
                 throw (SAXException) new SAXException().initCause(e);

@@ -45,6 +45,9 @@ public class XMLParser {
 
     }
 
+    public void setCapabilities(Capabilities capabilities) {
+    }
+
     /**
      * The handler with hooks for startElement etc. The SAX parser will build
      * up the parse tree, by calling these hooks.
@@ -135,8 +138,9 @@ public class XMLParser {
      * Parses an XML string returning an element tree from it.
      *
      * @param is Inputsource (byte stream) where the XML text is read from
+     * @param yangNsPackages
      */
-    public Element parse(InputSource is) throws JNCException {
+    public Element parse(InputSource is, YangNsPackage... yangNsPackages) throws JNCException {
         try {
             final ConfHandler handler = new ConfHandler();
             parser.setContentHandler(handler);
@@ -153,8 +157,9 @@ public class XMLParser {
      * structure.
      *
      * @param str String containing the XML text to parse
+     * @param yangNsPackages
      */
-    public Element parse(String str) throws JNCException {
+    public Element parse(String str, YangNsPackage... yangNsPackages) throws JNCException {
         final ByteArrayInputStream istream = new ByteArrayInputStream(
                 str.getBytes(StandardCharsets.UTF_8));
         final InputSource is = new InputSource(istream);

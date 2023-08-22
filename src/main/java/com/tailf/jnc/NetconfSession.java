@@ -336,6 +336,7 @@ public class NetconfSession {
         trace("capabilities: \n{}", capatree.toXMLString());
 
         capabilities = new Capabilities(capatree);
+        parser.setCapabilities(capabilities);
         if (!capabilities.baseCapability && !capabilities.baseCapability_v1_1) {
             throw new JNCException(JNCException.SESSION_ERROR,
                     "server does not support NETCONF base capability: "
@@ -391,7 +392,8 @@ public class NetconfSession {
         // print, but no newline at the end
         out.print(request.encodedXMLString(false));
         out.flush();
-        return parser.parse(in.readOne());
+        List<YangNsPackage> yangNsPackageList = request.getYangNsPackageList();
+        return parser.parse(in.readOne(), yangNsPackageList.toArray(new YangNsPackage[yangNsPackageList.size()]));
     }
 
     /**
@@ -467,8 +469,7 @@ public class NetconfSession {
      *
      * @param subtreeFilter A subtree filter
      */
-    public NodeSet getConfig(Element subtreeFilter) throws JNCException,
-            IOException {
+    public NodeSet getConfig(Element subtreeFilter) throws JNCException, IOException {
         return getConfig(RUNNING, subtreeFilter);
     }
 
@@ -524,6 +525,10 @@ public class NetconfSession {
         return getConfig(RUNNING, xpath);
     }
 
+    public NodeSet getConfig(String xpath, YangNsPackage... yangNsPackages) throws JNCException, IOException {
+        return getConfig(RUNNING, xpath, yangNsPackages);
+    }
+
     /**
      * Gets the device configuration data specified by subtree filtering.
      *
@@ -531,14 +536,15 @@ public class NetconfSession {
      *                      {@link #CANDIDATE}, {@link #STARTUP}
      * @param subtreeFilter A subtree filter
      */
-    public NodeSet getConfig(int datastore, Element subtreeFilter)
-            throws JNCException, IOException {
+    public NodeSet getConfig(int datastore, Element subtreeFilter) throws JNCException, IOException {
         trace("getConfig: {}\n{}", datastoreToString(datastore),
                 subtreeFilter.toXMLString());
         RPCRequest rpcRequest = prepareGetConfigMessage(encodeDatastore(datastore), subtreeFilter);
         out.print(rpcRequest.getMessage().toString());
         out.flush();
-        return recvRpcReplyData(rpcRequest.getMsgId());
+        // return recvRpcReplyData(rpcRequest.getMsgId());
+        List<YangNsPackage> yangNsPackageList = subtreeFilter.getYangNsPackageList();
+        return recvRpcReplyData(rpcRequest.getMsgId(), yangNsPackageList.toArray(new YangNsPackage[yangNsPackageList.size()]));
     }
 
     /**
@@ -548,7 +554,7 @@ public class NetconfSession {
      *                  {@link #CANDIDATE}, {@link #STARTUP}
      * @param xpath     XPath expression
      */
-    public NodeSet getConfig(int datastore, String xpath)
+    public NodeSet getConfig(int datastore, String xpath, YangNsPackage... yangNsPackages)
             throws JNCException, IOException {
         trace("getConfig: {} \"{}\"", datastoreToString(datastore), xpath);
         if (!capabilities.xpathCapability) {
@@ -558,7 +564,7 @@ public class NetconfSession {
         RPCRequest rpcRequest = prepareGetConfigMessage(encodeDatastore(datastore), xpath);
         out.print(rpcRequest.getMessage().toString());
         out.flush();
-        return recvRpcReplyData(rpcRequest.getMsgId());
+        return recvRpcReplyData(rpcRequest.getMsgId(), yangNsPackages);
     }
 
     public String getConfigXmlString(int datastore) throws JNCException, IOException {
@@ -634,7 +640,8 @@ public class NetconfSession {
         RPCRequest rpcRequest = prepareGetMessage(subtreeFilter);
         out.print(rpcRequest.getMessage().toString());
         out.flush();
-        return recvRpcReplyData(rpcRequest.getMsgId());
+        List<YangNsPackage> yangNsPackageList = subtreeFilter.getYangNsPackageList();
+        return recvRpcReplyData(rpcRequest.getMsgId(), yangNsPackageList.toArray(new YangNsPackage[yangNsPackageList.size()]));
     }
 
     /**
@@ -653,6 +660,18 @@ public class NetconfSession {
         out.print(rpcRequest.getMessage().toString());
         out.flush();
         return recvRpcReplyData(rpcRequest.getMsgId());
+    }
+
+    public NodeSet get(String xpath, YangNsPackage... yangNsPackages) throws JNCException, IOException {
+        trace("get: \"{}\"", xpath);
+        if (!capabilities.hasXPath()) {
+            throw new JNCException(JNCException.SESSION_ERROR,
+                    "the :xpath capability is not supported by server");
+        }
+        RPCRequest rpcRequest = prepareGetMessage(xpath);
+        out.print(rpcRequest.getMessage().toString());
+        out.flush();
+        return recvRpcReplyData(rpcRequest.getMsgId(), yangNsPackages);
     }
 
     /**
@@ -1526,8 +1545,8 @@ public class NetconfSession {
         RPCRequest rpcRequest = prepareActionMessage(data);
         out.print(rpcRequest.getMessage().toString());
         out.flush();
-        return recvRpcReplyOk(null);
-
+        List<YangNsPackage> yangNsPackageList = data.getYangNsPackageList();
+        return recvRpcReplyOk(null, yangNsPackageList.toArray(new YangNsPackage[yangNsPackageList.size()]));
     }
 
     /* Receive from session */
@@ -1551,13 +1570,13 @@ public class NetconfSession {
      * @throws JNCException
      * @throws IOException
      */
-    protected Element recvRpcReplyOk(String mid) throws JNCException, IOException {
+    protected Element recvRpcReplyOk(String mid, YangNsPackage... yangNsPackages) throws JNCException, IOException {
         final String reply = in.readOne();
         trace("reply= {}", reply);
         if (reply.length() == 0) {
             throw new JNCException(JNCException.PARSER_ERROR, "empty input");
         }
-        final Element t = parser.parse(reply);
+        final Element t = parser.parse(reply, yangNsPackages);
         final Element ok;
 
         if (mid != null) {
@@ -1586,27 +1605,27 @@ public class NetconfSession {
      * Reads one rpc-reply from session and parse the &lt;data&gt;. Returns the
      * NodeSet contained in the data tag.
      */
-    NodeSet recvRpcReplyData(int mid) throws JNCException, IOException {
-        return recvRpcReply("/data", parser, Integer.toString(mid));
+    NodeSet recvRpcReplyData(int mid, YangNsPackage... yangNsPackages) throws JNCException, IOException {
+        return recvRpcReply("/data", parser, Integer.toString(mid), yangNsPackages);
     }
 
-    NodeSet recvRpcReplyLockPartial(int mid) throws JNCException,
+    NodeSet recvRpcReplyLockPartial(int mid, YangNsPackage... yangNsPackages) throws JNCException,
             IOException {
-        return recvRpcReply("", parser, Integer.toString(mid));
+        return recvRpcReply("", parser, Integer.toString(mid), yangNsPackages);
     }
 
-    NodeSet recvCallRpcReply(Element e, int mid) throws JNCException,
+    NodeSet recvCallRpcReply(Element e, int mid, YangNsPackage... yangNsPackages) throws JNCException,
             IOException {
         final XMLParser parser = new XMLParser(); // XXX: Why new parser?
-        return recvRpcReply("", parser, Integer.toString(mid));
+        return recvRpcReply("", parser, Integer.toString(mid), yangNsPackages);
     }
 
-    NodeSet recvRpcReply(String path, XMLParser parser, String mid)
+    NodeSet recvRpcReply(String path, XMLParser parser, String mid, YangNsPackage... yangNsPackages)
             throws JNCException, IOException {
         final String reply = in.readOne();
         trace("reply= {}", reply);
 
-        final Element t = parser.parse(reply);
+        final Element t = parser.parse(reply, yangNsPackages);
         final Element rep = t.getFirst("self::rpc-reply");
         if (rep != null) {
             checkMid(rep, mid);

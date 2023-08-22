@@ -2,6 +2,9 @@ package com.tailf.jnc;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Capabilities {
 
@@ -318,13 +321,64 @@ public class Capabilities {
     private final List<Capa> capas;
     private final List<Capa> data_capas;
 
-    static private class Capa {
+    private final Map<String,Capa> dataCapaUriMap;
+    static public class Capa {
         String uri;
+        String module;
         String revision;
+        String string;
 
-        Capa(String uri, String revision) {
+        Capa(String uri, String module, String revision, String string) {
             this.uri = uri;
+            this.module = module;
             this.revision = revision;
+            this.string = string;
+        }
+
+        public String getModule() {
+            return module;
+        }
+
+        public String getUri() {
+            return uri;
+        }
+
+        public String getRevision() {
+            return revision;
+        }
+
+        @Override
+        public String toString() {
+            if (string == null) {
+                string = uri + "?module=" + module +
+                        (revision == null ? "" : "&revision=" + revision);
+            }
+            return string;
+
+        }
+
+        public static Capa valueOf(String str) {
+            final String parts[] = str.split("\\?");
+            String rev = null;
+            String mod = null;
+            final String uri = parts[0];
+            if (parts.length == 2) {
+                // we have some query part data
+                final String q = parts[1];
+                final String pairs[] = q.split("&");
+
+                for (final String pair : pairs) {
+                    final String kv[] = pair.split("=");
+                    if (kv[0].equals("revision")) {
+                        rev = kv[1];
+                    }
+                    if (kv[0].equals("module")) {
+                        mod = kv[1];
+                    }
+                }
+            }
+            Capa capa = new Capa(uri, mod, rev, str);
+            return capa;
         }
     }
 
@@ -333,12 +387,14 @@ public class Capabilities {
         capas = new ArrayList<Capa>(caps.size());
         data_capas = new ArrayList<Capa>(caps.size());
 
+        dataCapaUriMap = new HashMap<>();
         for (int i = 0; i < caps.size(); i++) {
             final Element cap = caps.getElement(i);
 
             // Do we have a query part
             final String parts[] = cap.value.toString().split("\\?");
             String rev = null;
+            String mod = null;
             final String uri = parts[0];
             if (parts.length == 2) {
                 // we have some query part data
@@ -350,9 +406,13 @@ public class Capabilities {
                     if ("revision".equals(kv[0])) {
                         rev = kv[1];
                     }
+                    if (kv[0].equals("module")) {
+                        mod = kv[1];
+                    }
                 }
             }
-            capas.add(new Capa(uri, rev));
+            Capa capa = new Capa(uri, mod, rev, cap.value.toString());
+            capas.add(capa);
             if (NETCONF_BASE_CAPABILITY.equals(uri)) {
                 baseCapability = true;
             } else if (NETCONF_BASE_CAPABILITY_1_1.equals(uri)) {
@@ -411,7 +471,8 @@ public class Capabilities {
             } else {
                 // It's either a proper data schema capability or some
                 // homegrown agent capability
-                data_capas.add(new Capa(uri, rev));
+                data_capas.add(capa);
+                dataCapaUriMap.put(uri, capa);
             }
         }
     }
@@ -439,4 +500,24 @@ public class Capabilities {
         return null;
     }
 
+    public Capa getCapa(String uri) {
+        for (Capa capa : data_capas) {
+            if (capa.uri.equals(uri)) {
+                return capa;
+            }
+        }
+        return null;
+    }
+
+    public List<Capa> getCapas() {
+        return capas;
+    }
+
+    public List<Capa> getDataCapas() {
+        return data_capas;
+    }
+
+    public Capa getCapaByUri(String namespace){
+        return dataCapaUriMap.get(namespace);
+    }
 }

@@ -81,10 +81,10 @@ public class Element implements Cloneable, Serializable {
      * level. For example the NETCONF prefix mapping "nc" is added here as a
      * default.
      */
-    public static final PrefixMap defaultPrefixes = new PrefixMap(new Prefix[] {
+    public static final PrefixMap defaultPrefixes = new PrefixMap(new Prefix[]{
             new Prefix("nc", NETCONF_NAMESPACE),
             new Prefix("pl", Capabilities.NS_PARTIAL_LOCK),
-            new Prefix("ncn", Capabilities.NS_NOTIFICATION) });
+            new Prefix("ncn", Capabilities.NS_NOTIFICATION)});
 
     /**
      * Children to the node, if container element.
@@ -94,21 +94,25 @@ public class Element implements Cloneable, Serializable {
     /**
      * The parent to this node.
      */
-    protected Element parent;
+    protected Element parent = null;
+
+    protected List<YangNsPackage> yangNsPackageList = new ArrayList<>();
 
     /**
      * Constructor that creates a new element tree. An element consists of a
      * name that belongs to a namespace.
      *
-     * @param ns Namespace
+     * @param ns   Namespace
      * @param name Name of the element
      */
     public Element(String ns, String name) {
         namespace = ns;
         this.name = name;
+        /*
         final PrefixMap prefixMap = new PrefixMap();
         prefixMap.add(new Prefix("", namespace));
         setPrefix(prefixMap);
+        */
     }
 
     public Element getRootElement() {
@@ -129,7 +133,7 @@ public class Element implements Cloneable, Serializable {
      * expressions.
      *
      * @param namespace Namespace
-     * @param pathStr A "path create" string
+     * @param pathStr   A "path create" string
      * @return A new configuration element tree
      */
     public static Element create(String namespace, String pathStr)
@@ -148,7 +152,7 @@ public class Element implements Cloneable, Serializable {
      * See {@link PathCreate} for more information about path create
      * expressions.
      *
-     * @param prefix A prefix mapping.
+     * @param prefix  A prefix mapping.
      * @param pathStr A "path create" string
      * @return A new configuration element tree
      */
@@ -169,7 +173,7 @@ public class Element implements Cloneable, Serializable {
      * expressions.
      *
      * @param prefixMap Prefix mappings to be added
-     * @param pathStr A "path create" string
+     * @param pathStr   A "path create" string
      * @return A new configuration element tree
      */
     public static Element create(PrefixMap prefixMap, String pathStr)
@@ -215,7 +219,7 @@ public class Element implements Cloneable, Serializable {
     /**
      * Creates a child element with specified value.
      *
-     * @param name The name of the child element
+     * @param name  The name of the child element
      * @param value The value of the element
      */
     public Element createChild(String name, Object value) {
@@ -229,8 +233,8 @@ public class Element implements Cloneable, Serializable {
      * Creates a child element with specified value.
      *
      * @param namespace The namespace that the name belongs to
-     * @param name The name of the child element
-     * @param value The value of the element
+     * @param name      The name of the child element
+     * @param value     The value of the element
      */
     public Element createChild(String namespace, String name, Object value) {
         final Element elem = new Element(namespace, name);
@@ -257,7 +261,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param pathStr A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(String pathStr) throws JNCException {
         return createPath(CREATE_MERGE, null, pathStr);
@@ -268,10 +272,10 @@ public class Element implements Cloneable, Serializable {
      * path expression. The mode parameter is one of: {@link #CREATE_NEW},
      * {@link #CREATE_MERGE}, {@link #CREATE_MERGE_MULTI}
      *
-     * @param mode The creation mode.
+     * @param mode    The creation mode.
      * @param pathStr A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(int mode, String pathStr) throws JNCException {
         return createPath(mode, null, pathStr);
@@ -287,9 +291,9 @@ public class Element implements Cloneable, Serializable {
      * expressions.
      *
      * @param namespace Namespace.
-     * @param pathStr A "path create" string.
+     * @param pathStr   A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(String namespace, String pathStr)
             throws JNCException {
@@ -307,10 +311,10 @@ public class Element implements Cloneable, Serializable {
      * See {@link PathCreate} for more information about path create
      * expressions.
      *
-     * @param prefix A prefix mapping
+     * @param prefix  A prefix mapping
      * @param pathStr A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(Prefix prefix, String pathStr)
             throws JNCException {
@@ -329,9 +333,9 @@ public class Element implements Cloneable, Serializable {
      * expressions.
      *
      * @param addPrefixes Prefix mappings
-     * @param pathStr A "path create" string.
+     * @param pathStr     A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(PrefixMap addPrefixes, String pathStr)
             throws JNCException {
@@ -349,11 +353,11 @@ public class Element implements Cloneable, Serializable {
      * See {@link PathCreate} for more information about path create
      * expressions.
      *
-     * @param mode The creation mode.
+     * @param mode        The creation mode.
      * @param addPrefixes Prefix mappings
-     * @param pathStr A "path create" string.
+     * @param pathStr     A "path create" string.
      * @return A new configuration element sub-tree that is a child of the
-     *         context node
+     * context node
      */
     public Element createPath(int mode, PrefixMap addPrefixes, String pathStr)
             throws JNCException {
@@ -407,6 +411,15 @@ public class Element implements Cloneable, Serializable {
             addChild(elem);
             return elem;
         }
+    }
+
+    public void addYangNsPackage(YangNsPackage... yangNsPackages) {
+        for (YangNsPackage yangNsPackage : yangNsPackages)
+            yangNsPackageList.add(yangNsPackage);
+    }
+
+    public List<YangNsPackage> getYangNsPackageList() {
+        return yangNsPackageList;
     }
 
     /**
@@ -503,7 +516,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param child Child element to be inserted
      * @throws JNCException If child is already a child of another element or
-     *             if child equals this element
+     *                      if child equals this element
      */
     public int insertChild(Element child) throws JNCException {
         if (child.parent != null || child == this) {
@@ -539,7 +552,7 @@ public class Element implements Cloneable, Serializable {
      * Inserts a child element at the correct position by providing structure
      * information (the names of all the children, in order).
      *
-     * @param child Child element to be inserted
+     * @param child         Child element to be inserted
      * @param childrenNames The names of all children in order.
      * @throws JNCException If child is already a child of another element.
      */
@@ -588,7 +601,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param child Child element to be inserted
      * @throws JNCException If child is already a child of another element or
-     *             if child equals this element
+     *                      if child equals this element
      */
     public int insertLast(Element child) throws JNCException {
         return insertChild(child);
@@ -665,7 +678,6 @@ public class Element implements Cloneable, Serializable {
 
     /**
      * Adds an attribute for this element.
-     *
      */
     public void addAttr(Attribute attr) {
         if (attrs == null) {
@@ -696,7 +708,7 @@ public class Element implements Cloneable, Serializable {
      */
     public String getAttrValue(String name) {
         Attribute attribute = getAttr(name);
-    
+
         if (attribute != null) {
             return attribute.getValue();
         } else {
@@ -725,7 +737,7 @@ public class Element implements Cloneable, Serializable {
      * maps. If the attribute already exists, its value is changed, otherwise
      * the attribute is added.
      *
-     * @param name The name of the attribute
+     * @param name  The name of the attribute
      * @param value The value of the attribute
      * @return The configuration attribute.
      */
@@ -764,8 +776,8 @@ public class Element implements Cloneable, Serializable {
      * If name starts with xmlns and ns starts with the xmlns namespace
      * (http://www.w3.org/2000/xmlns/), the value is set as a prefix map.
      *
-     * @param ns The namespace that the attribute name belongs to
-     * @param name The name of the attribute
+     * @param ns    The namespace that the attribute name belongs to
+     * @param name  The name of the attribute
      * @param value The value of the attribute
      * @return The configuration attribute.
      */
@@ -818,7 +830,7 @@ public class Element implements Cloneable, Serializable {
      * element's attribute list.
      *
      * @param namespace the namespace the name belongs to.
-     * @param name The name of the attribute to be removed.
+     * @param name      The name of the attribute to be removed.
      */
     public void removeAttr(String namespace, String name) {
         if (attrs != null) {
@@ -865,7 +877,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param pathStr The path to match
      * @return <code>true</code> if any node matches pathStr;
-     *         <code>false</code> otherwise.
+     * <code>false</code> otherwise.
      */
     public boolean exists(String pathStr) throws JNCException {
         final NodeSet nodes = get(pathStr);
@@ -895,7 +907,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param pathStr Path string to find nodes
      * @return An array of the values of the element nodes found by the
-     *         expression (or <code>null</code>)
+     * expression (or <code>null</code>)
      */
     public Object[] getValues(String pathStr) throws JNCException {
         final NodeSet nodes = get(pathStr);
@@ -916,7 +928,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param pathStr Path string to find nodes
      * @return A set with the values of the element nodes found by the
-     *         expression (or <code>null</code>)
+     * expression (or <code>null</code>)
      */
     public Set<String> getValuesAsSet(String pathStr) throws JNCException {
         final String[] valuesBefore = (String[]) getValues(pathStr);
@@ -939,7 +951,7 @@ public class Element implements Cloneable, Serializable {
      * See {@link Path} for more information about path expressions.
      *
      * @param pathStr Path string to find nodes
-     * @param value Value to be set
+     * @param value   Value to be set
      */
     public void setValue(String pathStr, Object value) throws JNCException {
         for (final Element elem : get(pathStr)) {
@@ -981,7 +993,7 @@ public class Element implements Cloneable, Serializable {
      *      Element first_host = full.getFirst("/hosts/host");
      *      Element last_host = full.getLast("/hosts/host");
      * </pre>
-     *
+     * <p>
      * See {@link Path} for more information about path expressions.
      *
      * @param pathStr Path string to find nodes
@@ -1021,7 +1033,7 @@ public class Element implements Cloneable, Serializable {
      * Element full_config = session.get();
      * NodeSet calle_nodes = full_config.get(&quot;host[www='Calle']&quot;);
      * </pre>
-     *
+     * <p>
      * See {@link Path} for more information about path expressions.
      *
      * @param pathStr Path string to find nodes
@@ -1136,20 +1148,20 @@ public class Element implements Cloneable, Serializable {
     }
 
     /**
-     * Operation flag to be used with {@link #merge(Element,int)}.
+     * Operation flag to be used with {@link #merge(Element, int)}.
      */
     public final static int OP_CREATE = 1;
     /**
-     * Operation flag to be used with {@link #merge(Element,int)}.
+     * Operation flag to be used with {@link #merge(Element, int)}.
      */
     public final static int OP_DELETE = 2;
     /**
-     * Operation flag to be used with {@link #merge(Element,int)}.
+     * Operation flag to be used with {@link #merge(Element, int)}.
      */
     public final static int OP_REPLACE = 3;
 
     /**
-     * Operation flag to be used with {@link #merge(Element,int)}.
+     * Operation flag to be used with {@link #merge(Element, int)}.
      */
     public final static int OP_MERGE = 4;
 
@@ -1159,10 +1171,9 @@ public class Element implements Cloneable, Serializable {
      * marked. Either OP_CREATE, OP_DELETE, OP_MERGE or OP_REPLACE.
      *
      * @param root Target subtree. Must start from root node.
-     * @param op One of {@link #OP_CREATE}, {@link #OP_DELETE},
-     *            {@link #OP_MERGE} or {@link #OP_REPLACE}
+     * @param op   One of {@link #OP_CREATE}, {@link #OP_DELETE},
+     *             {@link #OP_MERGE} or {@link #OP_REPLACE}
      * @return Resulting target subtrees in NodeSet
-     *
      */
     public Element merge(Element root, int op) throws JNCException {
 
@@ -1267,7 +1278,7 @@ public class Element implements Cloneable, Serializable {
         // copy attrs
         if (attrs != null) {
             copy.attrs = new ArrayList<Attribute>();
-            for (Attribute attr: attrs) {
+            for (Attribute attr : attrs) {
                 final Attribute copyAttr = (Attribute) attr.clone();
                 copy.attrs.add(copyAttr);
             }
@@ -1309,17 +1320,18 @@ public class Element implements Cloneable, Serializable {
      * <code>setAttr(Element.NETCONF_NAMESPACE,"operation",operation);</code> see @setAttr
      */
     public void setMark(String operation) {
+        /*
         Element that = this;
         while (that!=null&&that.prefixes==null){
             that = that.getParent();
         }
         that.prefixes.merge(defaultPrefixes);
+        */
         setAttr(NETCONF_NAMESPACE, OPERATION, operation);
     }
 
     /**
      * Removes all operation attributes from a sub-tree.
-     *
      */
     public void removeMarks() {
         removeMark();
@@ -1329,6 +1341,7 @@ public class Element implements Cloneable, Serializable {
             }
         }
     }
+
     /**
      * Marks a node with operation delete.
      */
@@ -1352,6 +1365,7 @@ public class Element implements Cloneable, Serializable {
             }
         }
     }
+
     /**
      * Marks a node with operation delete.
      */
@@ -1510,7 +1524,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param prefix Prefix string to lookup.
      * @return The namespace of the specified prefix in the context of this
-     *         node.
+     * node.
      */
     public String lookupContextPrefix(String prefix) {
         Element node = this;
@@ -1596,7 +1610,7 @@ public class Element implements Cloneable, Serializable {
      *
      * @param other Object to compare this element against.
      * @return <code>true</code> if other is an Element with same name,
-     *         namespace and value; <code>false</code> otherwise.
+     * namespace and value; <code>false</code> otherwise.
      */
     @Override
     public boolean equals(Object other) {
@@ -1619,7 +1633,7 @@ public class Element implements Cloneable, Serializable {
      * Returns a hash code value for this object.
      *
      * @return The sum of the hash codes of the name, namespace and value of
-     *         this element subtree node.
+     * this element subtree node.
      */
     @Override
     public int hashCode() {
@@ -1710,6 +1724,51 @@ public class Element implements Cloneable, Serializable {
         return s.toString();
     }
 
+    private void toXMLString(int indent, StringBuffer s) {
+        final boolean flag = hasChildren();
+        final String qName = qualifiedName();
+        s.append(new String(new char[indent * 2]).replace("\0", " "));
+        s.append("<").append(qName);
+        // add xmlns attributes (prefixes)
+        if (prefixes != null) {
+            for (final Prefix p : prefixes) {
+                s.append(" ").append(p.toXMLString());
+            }
+        }
+        if (this.getValue() instanceof YangIdentityref && ((YangIdentityref) this.getValue()).getValue().prefixes != null) {
+            PrefixMap prefixes = ((YangIdentityref) this.getValue()).getValue().prefixes;
+            s.append(" ").append(prefixes.get(0).toXMLString());
+        }
+        // add attributes
+        if (attrs != null) {
+            for (final Attribute attr : attrs) {
+                s.append(" ").append(attr.toXMLString(this));
+            }
+        }
+        indent++;
+        // add children elements if any
+        if (flag) {
+            s.append(">").append(("\n"));
+            for (final Element child : children) {
+                child.toXMLString(indent, s);
+            }
+        } else { // add value if any
+            if (value != null) {
+                s.append(">").append((""));
+                final String stringValue = value.toString().replaceAll("&",
+                        "&amp;");
+                s.append(getIndentationSpacing(false, indent));
+                s.append(stringValue).append((""));
+            } else {
+                // self-closing tag
+                s.append("/>").append((""));
+                return;
+            }
+        }
+        indent--;
+        s.append(getIndentationSpacing(flag, indent)).append("</").append(qName).append(">\n");
+    }
+
     public String toCLIString() {
         final StringBuffer s = new StringBuffer();
         toCLIString(0, s);
@@ -1766,36 +1825,36 @@ public class Element implements Cloneable, Serializable {
 
     }
 
-    public String toJSONString(){
+    public String toJSONString() {
         final StringBuffer s = new StringBuffer();
-        toJSONString(true,false,false,0, s);
+        toJSONString(true, false, false, 0, s);
         s.append("\n}");
         return s.toString();
     }
 
-    private void toJSONString(boolean first,boolean isEnd,boolean isArray,int indent, StringBuffer s){
+    private void toJSONString(boolean first, boolean isEnd, boolean isArray, int indent, StringBuffer s) {
         final boolean flag = hasChildren();
-        boolean isArrayChild=false;
-        if(flag){
-            String  name =null;
+        boolean isArrayChild = false;
+        if (flag) {
+            String name = null;
             for (final Element child : children) {
-                if(name!=null&&name.equals(child.qualifiedName())){
-                    isArrayChild =true;
+                if (name != null && name.equals(child.qualifiedName())) {
+                    isArrayChild = true;
                     break;
                 }
-                name =child.qualifiedName();
+                name = child.qualifiedName();
             }
         }
         final String qName = qualifiedName();
         s.append(getIndentationSpacing(true, indent));
-        if(first){
-            if(isArray){
+        if (first) {
+            if (isArray) {
                 s.append("[");
-            }else{
-            s.append("{");}
+            } else {
+                s.append("{");
+            }
         }
-        if(!isArray)
-        {
+        if (!isArray) {
             s.append("\n").append(getIndentationSpacing(true, indent)).append("\"").append(qName).append("\":");
         }
         // add xmlns attributes (prefixes)
@@ -1814,11 +1873,11 @@ public class Element implements Cloneable, Serializable {
         // add children elements if any
         if (flag) {
 //            s.append("").append(("\n"));
-            int index=0;
-            int endIndex =children.size()-1;
+            int index = 0;
+            int endIndex = children.size() - 1;
             for (final Element child : children) {
-                child.toJSONString(index==0,index==endIndex,isArrayChild,indent, s);
-                if(index!=endIndex)
+                child.toJSONString(index == 0, index == endIndex, isArrayChild, indent, s);
+                if (index != endIndex)
                     s.append(",");
                 s.append("\n");//.append(getIndentationSpacing(true, indent));
                 index++;
@@ -1836,56 +1895,15 @@ public class Element implements Cloneable, Serializable {
                 return;
             }
         }
-        if(flag){
-            if(isArrayChild ){
+        if (flag) {
+            if (isArrayChild) {
                 s.append(getIndentationSpacing(flag, indent)).append("]");
-            }else{
+            } else {
                 s.append(getIndentationSpacing(flag, indent)).append("}");
             }
         }
 
         indent--;
-    }
-
-    private void toXMLString(int indent, StringBuffer s) {
-        final boolean flag = hasChildren();
-        final String qName = qualifiedName();
-        s.append(new String(new char[indent * 2]).replace("\0", " "));
-        s.append("<").append(qName);
-        // add xmlns attributes (prefixes)
-        if (prefixes != null) {
-            for (final Prefix p : prefixes) {
-                s.append(" ").append(p.toXMLString());
-            }
-        }
-        // add attributes
-        if (attrs != null) {
-            for (final Attribute attr : attrs) {
-                s.append(" ").append(attr.toXMLString(this));
-            }
-        }
-        indent++;
-        // add children elements if any
-        if (flag) {
-            s.append(">").append(("\n"));
-            for (final Element child : children) {
-                child.toXMLString(indent, s);
-            }
-        } else { // add value if any
-            if (value != null) {
-                s.append(">").append((""));
-                final String stringValue = value.toString().replaceAll("&",
-                        "&amp;");
-                s.append(getIndentationSpacing(false, indent));
-                s.append(stringValue).append((""));
-            } else {
-             // self-closing tag
-             s.append("/>").append((""));
-             return;
-            }
-        }
-        indent--;
-        s.append(getIndentationSpacing(flag, indent)).append("</").append(qName).append(">\n");
     }
 
     public String encodedXMLString(boolean newlineAtEnd) {
@@ -1925,13 +1943,14 @@ public class Element implements Cloneable, Serializable {
         }
         s.append("</" + qName + ">" + (newlineAtEnd ? "\n" : ""));
     }
+
     /**
      * Gets indentation spacing for any given indent level.
      *
      * @param shouldIndent Whether or not there should be any indentation.
-     * @param indent The indentation level.
+     * @param indent       The indentation level.
      * @return A string with indent * 2 number of spaces if shouldIndent is
-     *         <code>true</code>; otherwise an empty string.
+     * <code>true</code>; otherwise an empty string.
      */
     protected String getIndentationSpacing(boolean shouldIndent, int indent) {
         if (shouldIndent) {
@@ -1960,7 +1979,7 @@ public class Element implements Cloneable, Serializable {
      * Equivalent to calling encode(out, <code>true</code>, c);
      *
      * @param out Stream to send the encoded version of this element to.
-     * @param c Capabilities, used by YangElement instances.
+     * @param c   Capabilities, used by YangElement instances.
      * @throws JNCException If a YangElement encode implementation fails.
      */
     protected void encode(Transport out, Capabilities c) throws JNCException {
@@ -1976,7 +1995,7 @@ public class Element implements Cloneable, Serializable {
      * <p>
      * Equivalent to calling encode(out, newline_at_end, <code>null</code>);
      *
-     * @param out Stream to send the encoded version of this element to.
+     * @param out          Stream to send the encoded version of this element to.
      * @param newlineAtEnd If 'true' a newline is printed at the end.
      * @throws JNCException If a YangElement encode implementation fails.
      */
@@ -1992,17 +2011,24 @@ public class Element implements Cloneable, Serializable {
      * The newline_at_end argument controls whether a newline char is permitted
      * at the end or not.
      *
-     * @param out Stream to send the encoded version of this element to.
+     * @param out          Stream to send the encoded version of this element to.
      * @param newlineAtEnd If 'true' a newline is printed at the end.
-     * @param c Capabilities, used by YangElement instances.
+     * @param c            Capabilities, used by YangElement instances.
      * @throws JNCException If a YangElement encode implementation fails.
      */
     protected void encode(Transport out, boolean newlineAtEnd,
-            Capabilities capas) throws JNCException {
+                          Capabilities capas) throws JNCException {
         final String qName = qualifiedName();
         out.print("<" + qName);
         // add xmlns attributes (prefixes)
         if (prefixes != null) {
+            for (final Prefix p : prefixes) {
+                out.print(" ");
+                p.encode(out);
+            }
+        }
+        if (this.getValue() instanceof YangIdentityref && ((YangIdentityref) this.getValue()).getValue().prefixes != null) {
+            PrefixMap prefixes = ((YangIdentityref) this.getValue()).getValue().prefixes;
             for (final Prefix p : prefixes) {
                 out.print(" ");
                 p.encode(out);
@@ -2025,10 +2051,10 @@ public class Element implements Cloneable, Serializable {
             // otherwise, add value (if any)
             out.print(">" + Utils.escapeXml(value.toString()));
         } else {
-	    // self-closing tag
-	    out.print("/>" + (newlineAtEnd ? "\n" : ""));
-	    return;
-	}
+            // self-closing tag
+            out.print("/>" + (newlineAtEnd ? "\n" : ""));
+            return;
+        }
         out.print("</" + qName + ">" + (newlineAtEnd ? "\n" : ""));
     }
 
@@ -2115,7 +2141,6 @@ public class Element implements Cloneable, Serializable {
     }
 
     /**
-     *
      * @param xmlContent
      * @return
      * @throws JNCException
@@ -2153,9 +2178,70 @@ public class Element implements Cloneable, Serializable {
     /**
      * Printout trace if 'debug'-flag is enabled.
      */
-    private static void trace(String format, Object ... args) {
+    private static void trace(String format, Object... args) {
         if (debugLevel >= DEBUG_LEVEL_ELEMENT) {
             System.err.println(String.format("*Element: " + format, args));
         }
+    }
+
+    public static Element wrapperGetRunningConfigElement(Element source) throws JNCException {
+        return wrapperGetConfigElement("running", source);
+    }
+
+    public static Element wrapperGetRunningConfigElement(String xpath) throws JNCException {
+        return wrapperGetConfigElement("running", xpath);
+    }
+
+    public static Element wrapperGetRunningConfigElement() throws JNCException {
+        return wrapperGetConfigElement("running");
+    }
+
+    public static Element wrapperGetConfigElement(String datastore, Element sourceFilter) throws JNCException {
+        Prefix prefix = defaultPrefixes.get(0);
+        String nc = defaultPrefixes.nsToPrefix(NETCONF_NAMESPACE);
+        Element element = Element.create(prefix, nc + ":" + "get-config");
+        element.createPath(nc + ":" + "source").createPath(nc + ":" + datastore);
+        Element filter = element.createPath(nc + ":" + "filter");
+        filter.setAttr("type", "subtree");
+        filter.insertChild(sourceFilter);
+        return element;
+    }
+
+    public static Element wrapperGetConfigElement(String datastore, String xpath) throws JNCException {
+        Prefix prefix = defaultPrefixes.get(0);
+        String nc = defaultPrefixes.nsToPrefix(NETCONF_NAMESPACE);
+        Element element = Element.create(prefix, nc + ":" + "get-config");
+        element.createPath(nc + ":" + "source").createPath(nc + ":" + datastore);
+        Element filter = element.createPath(nc + ":" + "filter");
+        filter.setAttr("type", "xpath");
+        filter.setAttr("select", xpath);
+        return element;
+    }
+    public static Element wrapperGetConfigElement(String datastore) throws JNCException {
+        Prefix prefix = defaultPrefixes.get(0);
+        String nc = defaultPrefixes.nsToPrefix(NETCONF_NAMESPACE);
+        Element element = Element.create(prefix, nc + ":" + "get-config");
+        element.createPath(nc + ":" + "source").createPath(nc + ":" + datastore);
+        return element;
+    }
+
+    public static Element wrapperGetElement(Element sourceFilter) throws JNCException {
+        Prefix prefix = defaultPrefixes.get(0);
+        String nc = defaultPrefixes.nsToPrefix(NETCONF_NAMESPACE);
+        Element element = Element.create(prefix, nc + ":" + "get");
+        Element filter = element.createPath(nc + ":" + "filter");
+        filter.setAttr("type", "subtree");
+        filter.insertChild(sourceFilter);
+        return element;
+    }
+
+    public static Element wrapperGetElement(String xpath) throws JNCException {
+        Prefix prefix = defaultPrefixes.get(0);
+        String nc = defaultPrefixes.nsToPrefix(NETCONF_NAMESPACE);
+        Element element = Element.create(prefix, nc + ":" + "get");
+        Element filter = element.createPath(nc + ":" + "filter");
+        filter.setAttr("type", "xpath");
+        filter.setAttr("select", xpath);
+        return element;
     }
 }
