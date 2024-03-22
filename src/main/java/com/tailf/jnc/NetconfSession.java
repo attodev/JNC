@@ -1796,6 +1796,9 @@ public class NetconfSession {
             return "unknown:";
         }
         return prefix.isEmpty() ? "" : prefix + ":";
+        /*
+        return "";
+        */
     }
 
     /**
@@ -1806,11 +1809,14 @@ public class NetconfSession {
         if (prefix == null) {
             return "xmlns:unknown=\"" + ns + "\"";
         }
+        /*
         if ("".equals(prefix)) {
             return "xmlns=\"" + ns + "\"";
         } else {
             return "xmlns:" + prefix + "=\"" + ns + "\"";
         }
+        */
+        return "xmlns=\"" + ns + "\"";
     }
 
     /**
@@ -1988,7 +1994,7 @@ public class NetconfSession {
     RPCRequest prepareGetMessage(Element subtreeFilter) {
         RPCRequest rpcMsg = new RPCRequest();
         rpcMsg.addRpcBegin(withDefaultsAttr);
-        rpcMsg.getMessage().append("\n<" + nc + GET_GT);
+        rpcMsg.getMessage().append("\n<" + nc + "get xmlns:nc=\"urn:ietf:params:xml:ns:netconf:base:1.0\">");
         rpcMsg.getMessage().append("\n<" + nc + FILTER + nc + "type=\"subtree\">");
         if (null != subtreeFilter) {
             rpcMsg.getMessage().append("\n" + subtreeFilter.encodedXMLString(false));
