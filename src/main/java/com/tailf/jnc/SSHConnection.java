@@ -106,6 +106,7 @@ public class SSHConnection implements AutoCloseable {
     public SSHConnection connect(String host, int port, int connectTimeout,
                         int kexTimeout) throws IOException, JNCException {
         client.setTimeout(connectTimeout);
+        client.setConnectTimeout(connectTimeout);
         client.getTransport().setTimeoutMs(kexTimeout);
         client.connect(host, port);
         return this;
