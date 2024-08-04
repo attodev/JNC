@@ -385,7 +385,7 @@ public class SSHSession implements Transport, AutoCloseable {
             subsys.close();
             session.close();
         } catch (IOException e) {
-            System.out.println("Exception caught while closing " + e);
+            System.out.println("Exception caught while closing " + e + " " + e.getMessage());
         }
     }
 
