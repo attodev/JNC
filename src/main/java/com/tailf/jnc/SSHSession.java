@@ -390,6 +390,12 @@ public class SSHSession implements Transport, AutoCloseable {
         }
 
         try {
+            subsysInput.close();
+        } catch (IOException e) {
+            System.out.println("Exception caught while closing subsysInput - " + e + " " + e.getMessage());
+        }
+
+        try {
             subsys.close();
         } catch (TransportException | ConnectionException e) {
             System.out.println("Exception caught while closing subsys - " + e + " " + e.getMessage());
