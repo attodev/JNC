@@ -18,7 +18,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.schmizz.sshj.connection.ConnectionException;
 import net.schmizz.sshj.connection.channel.direct.Session;
+import net.schmizz.sshj.transport.TransportException;
 
 /**
  * A SSH NETCONF transport. Can be used whenever {@link NetconfSession} intends
@@ -379,13 +381,24 @@ public class SSHSession implements Transport, AutoCloseable {
      */
     @Override
     public void close() {
+        watchdog.terminate();
+
         try {
-            watchdog.terminate();
             sessionOutput.close();
-            subsys.close();
-            session.close();
         } catch (IOException e) {
-            System.out.println("Exception caught while closing " + e + " " + e.getMessage());
+            System.out.println("Exception caught while closing sessionOutput - " + e + " " + e.getMessage());
+        }
+
+        try {
+            subsys.close();
+        } catch (TransportException | ConnectionException e) {
+            System.out.println("Exception caught while closing subsys - " + e + " " + e.getMessage());
+        }
+
+        try {
+            session.close();
+        } catch (TransportException | ConnectionException e) {
+            System.out.println("Exception caught while closing session - " + e + " " + e.getMessage());
         }
     }
 
