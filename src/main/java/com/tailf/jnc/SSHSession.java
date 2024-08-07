@@ -109,11 +109,18 @@ public class SSHSession implements Transport, AutoCloseable {
                 while (running) {
                     semaphore.acquire();
                     // now the session is reading, watch for timeout
+                    log.warn("JNC watchdog started: timeout={}", readTimeout);
                     if (! semaphore.tryAcquire(readTimeout, TimeUnit.MILLISECONDS)) {
-                        log.warn("read timeout, closing session");
+                        log.warn("read timeout, closing session 1");
+                        log.warn("read timeout, closing session 2");
+                        log.warn("read timeout, closing session 3");
                         close();
+                        log.warn("read timeout, close 1");
+                        log.warn("read timeout, close 2");
+                        log.warn("read timeout, close 3");
                         running = false;
                     }
+                    log.warn("JNC watchdog end");
                 }
             } catch (InterruptedException e) {
                 // log.debug("watchdog interrupted");
